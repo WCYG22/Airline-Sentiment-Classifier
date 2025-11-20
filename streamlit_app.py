@@ -118,20 +118,57 @@ with st.sidebar:
     st.info("v2.0 | Enterprise Edition")
 
 # --------- Page: Dashboard Overview ---------
-if page == "Dashboard Overview":
-    st.title("Executive Dashboard")
-    st.markdown("Overview of airline sentiment trends and dataset metrics.")
-    
-    # Top Metrics
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown(f"""<div class="metric-card"><div class="metric-value">{len(df):,}</div><div class="metric-label">Total Reviews</div></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div class="metric-card"><div class="metric-value">92%</div><div class="metric-label">Model Accuracy</div></div>""", unsafe_allow_html=True)
-    with c3:
-        st.markdown("""<div class="metric-card"><div class="metric-value">4.2</div><div class="metric-label">Avg Rating</div></div>""", unsafe_allow_html=True)
-    with c4:
-        st.markdown("""<div class="metric-card"><div class="metric-value">24h</div><div class="metric-label">Update Cycle</div></div>""", unsafe_allow_html=True)
+total_reviews = len(df)
+model_accuracy = "92%"
+avg_rating = round(df["overall"].mean(), 2) if "overall" in df else "4.2"
+update_cycle = "24h"
+
+st.markdown(f"""
+<div style="display:flex; flex-wrap: wrap; gap: 32px 24px; margin-bottom:38px;">
+
+    <div style="
+        background: linear-gradient(135deg, #EDF4FF 65%, #B6DBFF 100%);
+        border-radius: 16px; box-shadow: 1px 5px 18px #b9cbe933;
+        min-width: 240px; padding: 36px 20px 28px 20px; text-align:center;
+        flex: 1;
+        ">
+        <div style="font-size:2.65em; font-weight:700; color:#1469EF; letter-spacing:-2px;">{total_reviews:,}</div>
+        <div style="font-size:1.18em; color:#6c7892; font-weight:600; margin-top:8px; letter-spacing:1px;">TOTAL REVIEWS</div>
+    </div>
+
+    <div style="
+        background: linear-gradient(135deg, #EAFEEE 65%, #59D499 100%);
+        border-radius: 16px; box-shadow: 1px 5px 18px #34bd8485;
+        min-width: 220px; padding: 36px 20px 28px 20px; text-align:center;
+        flex: 1;
+        ">
+        <div style="font-size:2.65em; font-weight:700; color:#23B26D;">{model_accuracy}</div>
+        <div style="font-size:1.18em; color:#5A946E; font-weight:600; margin-top:8px; letter-spacing:1px;">MODEL ACCURACY</div>
+    </div>
+
+    <div style="
+        background: linear-gradient(135deg, #FFF6E0 65%, #FFD580 100%);
+        border-radius: 16px; box-shadow: 1px 5px 18px #ffefb880;
+        min-width: 200px; padding: 36px 20px 28px 20px; text-align:center;
+        flex: 1;
+        ">
+        <div style="font-size:2.65em; font-weight:700; color:#FFB800;">{avg_rating}</div>
+        <div style="font-size:1.18em; color:#8A740D; font-weight:600; margin-top:8px; letter-spacing:1px;">AVG RATING</div>
+    </div>
+
+    <div style="
+        background: linear-gradient(135deg, #FFF0F3 65%, #FFD6DD 100%);
+        border-radius: 16px; box-shadow: 1px 5px 18px #eda7be88;
+        min-width: 180px; padding: 36px 20px 28px 20px; text-align:center;
+        flex: 1;
+        ">
+        <div style="font-size:2.65em; font-weight:700; color:#EB3D63;">{update_cycle}</div>
+        <div style="font-size:1.18em; color:#B45E74; font-weight:600; margin-top:8px; letter-spacing:1px;">UPDATE CYCLE</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
     
     # --------- Visualizations ---------
     st.markdown("Sentiment & Ratings Analysis")
