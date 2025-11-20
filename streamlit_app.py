@@ -201,7 +201,7 @@ if page == "Dashboard Overview":
                 st.warning("Column 'recommended' not found.")
 
         with col2:
-            st.subheader("Rating Distribution")
+            st.title("Rating Distribution")
             if 'overall' in df.columns:
                 fig2, ax2 = plt.subplots()
                 sns.histplot(df['overall'], bins=10, kde=True, color='#0683b0', ax=ax2)
