@@ -191,7 +191,7 @@ if page == "Dashboard Overview":
         col1, col2 = st.columns(2)
         
         with col1:
-            st.Title("Sentiment Distribution")
+            st.title("Sentiment Distribution")
             if 'recommended' in df.columns:
                 fig1, ax1 = plt.subplots()
                 df['recommended'].value_counts().plot.pie(autopct='%1.1f%%', colors=['#21ad88', '#ea5757'], ax=ax1, startangle=90)
