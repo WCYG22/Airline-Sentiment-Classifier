@@ -239,21 +239,25 @@ elif page == "Prediction Engine":
                     # Flag and Log feature
                     if st.button("🚩 Flag This Review & Save to Log", type="secondary", key="flag_review_btn"):
                         from datetime import datetime
+                        
                         try:
+                            # Write to file
                             with open('alert_log.txt', 'a', encoding='utf-8') as f:
-                                f.write(f"\n{'='*70}\n")
-                                f.write(f"ALERT FLAGGED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                                f.write(f"Review: {user_review}\n")
-                                f.write(f"Prediction: NOT RECOMMENDED\n")
-                                f.write(f"Confidence: {conf:.1f}%\n")
-                                f.write(f"{'='*70}\n")
+                                entry = f"\n{'='*70}\n"
+                                entry += f"ALERT FLAGGED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                                entry += f"Review: {user_review}\n"
+                                entry += f"Prediction: NOT RECOMMENDED\n"
+                                entry += f"Confidence: {conf:.1f}%\n"
+                                entry += f"{'='*70}\n"
+                                
+                                f.write(entry)
+                                f.flush()  # Force write to disk
                             
                             st.success(f"✅ Review flagged and saved to alert_log.txt")
-                            st.info("📋 Check alert_log.txt to view the logged entry.")
+                            st.info("📋 Close and reopen the file to see the new entry.")
+                                
                         except Exception as e:
                             st.error(f"❌ Error saving to log: {e}")
-                            import traceback
-                            st.code(traceback.format_exc())
                 else:
                     # Optional: Show why it didn't trigger if negative
                     if pred == "no":
