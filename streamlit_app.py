@@ -57,9 +57,6 @@ font-weight:600; letter-spacing:.5px;">
 """, unsafe_allow_html=True)
 
 
-
-
-
 # --------- Model and Data Functions ---------
 @st.cache_resource
 def load_artifacts():
@@ -121,7 +118,7 @@ st.markdown("""
     
     /* Cards */
     .metric-card {
-        background: white;
+        background: #F0F6FF;
         border-radius: 12px;
         padding: 24px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.04);
