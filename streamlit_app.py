@@ -118,7 +118,7 @@ st.markdown("""
     
     /* Cards */
     .metric-card {
-        background: #F0F6FF;
+        background: D9EFFF;
         border-radius: 12px;
         padding: 24px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.04);
