@@ -5,28 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-st.set_page_config(
-    page_title="Airline Sentiment Dashboard",
-    page_icon="✈️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
-# --------- Sidebar: Professional Banner and Navigation ---------
-st.sidebar.markdown("""
-    <div style="
-        background: linear-gradient(135deg, #0093E9 80%, #80D0C7 100%);
-        border-radius: 18px;
-        box-shadow: 0 7px 28px #80D0C740;
-        margin-bottom:22px; margin-top:-16px;
-        text-align:center; padding:28px 12px 20px 12px;">
-        <img src="https://img.icons8.com/ios-filled/100/ffffff/airplane-take-off.png" width="54" style="margin-bottom:7px"/>
-        <div style="font-size:1.55em;font-weight:700;color:white;letter-spacing:0.7px;margin-bottom:3px;">Airline NLP</div>
-        <div style="font-size:1.07em;color:#f7fafb;font-weight:400;margin-bottom:2px;">
-            Professional Sentiment Analysis
-        </div>
-    </div>
-""", unsafe_allow_html=True)
 
 # Navigation with icons and color background
 st.sidebar.markdown("""
@@ -38,10 +17,10 @@ st.sidebar.markdown("""
 page = st.sidebar.radio(
     "",
     [
-        "🏠 Dashboard Overview", 
-        "🤖 Prediction Engine", 
-        "📦 Batch Analysis", 
-        "🧠 Model Insights"
+        "Dashboard Overview", 
+        "Prediction Engine", 
+        "Batch Analysis", 
+        "Model Insights"
     ],
     label_visibility="collapsed"
 )
