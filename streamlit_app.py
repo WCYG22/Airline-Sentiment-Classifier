@@ -183,75 +183,81 @@ elif page == "Prediction Engine":
         col1, col2 = st.columns([2, 1])
         with col1:
             user_review = st.text_area("Enter customer review:", height=150, placeholder="Type here...")
+            
             if st.button("Analyze Sentiment", type="primary"):
                 if user_review.strip():
                     pred, conf, prob = predict_review(user_review, model, vectorizer)
                     
-                    # Result Display
-                    res_class = "result-pos" if pred == "yes" else "result-neg"
-                    res_text = "Recommended" if pred == "yes" else "Not Recommended"
-                    icon = "👍" if pred == "yes" else "👎"
-                    
-                    st.markdown(f"""
-                    <div class="result-box {res_class}">
-                        {icon} {res_text} (Confidence: {conf:.1f}%)
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Probability Bar
-                    st.markdown("### Confidence Breakdown")
-                    chart_data = pd.DataFrame({
-                        "Sentiment": ["Not Recommended", "Recommended"],
-                        "Probability": [prob[0], prob[1]]
-                    })
-                    
-                    import altair as alt
-                    c = alt.Chart(chart_data).mark_bar().encode(
-                        x=alt.X('Sentiment', sort=None),
-                        y='Probability',
-                        color=alt.Color('Sentiment', scale=alt.Scale(domain=['Not Recommended', 'Recommended'], range=['#ea5757', '#21ad88'])),
-                        tooltip=['Sentiment', alt.Tooltip('Probability', format='.1%')]
-                    )
-                    st.altair_chart(c, use_container_width=True)
-                    
-                    # Store in session state for flag button
-                    st.session_state['last_review'] = user_review
-                    st.session_state['last_pred'] = pred
-                    st.session_state['last_conf'] = conf
-                    
-                    # Alert System (from app.py)
-                    if pred == "no" and conf >= 85:
-                        st.error("⚠️ ALERT: High Priority Negative Review Detected! (Confidence > 85%)")
-                        st.caption("Recommended Action: Escalate to customer service immediately.")
-                        
-                        # Flag and Log feature
-                        if st.button("🚩 Flag This Review & Save to Log", type="secondary", key="flag_review_btn"):
-                            from datetime import datetime
-                            try:
-                                # Use session state values to ensure data persists
-                                review_to_log = st.session_state.get('last_review', user_review)
-                                conf_to_log = st.session_state.get('last_conf', conf)
-                                
-                                with open('alert_log.txt', 'a', encoding='utf-8') as f:
-                                    f.write(f"\n{'='*70}\n")
-                                    f.write(f"ALERT FLAGGED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                                    f.write(f"Review: {review_to_log}\n")
-                                    f.write(f"Prediction: NOT RECOMMENDED\n")
-                                    f.write(f"Confidence: {conf_to_log:.1f}%\n")
-                                    f.write(f"{'='*70}\n")
-                                
-                                st.success(f"✅ Review flagged and saved to alert_log.txt")
-                            except Exception as e:
-                                st.error(f"❌ Error saving to log: {e}")
-                                import traceback
-                                st.code(traceback.format_exc())
-                    else:
-                        # Optional: Show why it didn't trigger if negative
-                        if pred == "no":
-                            st.info(f"Note: Confidence ({conf:.1f}%) below threshold (85%) for alert.")
-                    
+                    # Store in session state so results persist across reruns
+                    st.session_state['current_review'] = user_review
+                    st.session_state['current_pred'] = pred
+                    st.session_state['current_conf'] = conf
+                    st.session_state['current_prob'] = prob
+                    st.session_state['show_results'] = True
                 else:
                     st.warning("Please enter some text.")
+            
+            # Display results if they exist in session state
+            if st.session_state.get('show_results', False):
+                pred = st.session_state['current_pred']
+                conf = st.session_state['current_conf']
+                prob = st.session_state['current_prob']
+                user_review = st.session_state['current_review']
+                
+                # Result Display
+                res_class = "result-pos" if pred == "yes" else "result-neg"
+                res_text = "Recommended" if pred == "yes" else "Not Recommended"
+                icon = "👍" if pred == "yes" else "👎"
+                
+                st.markdown(f"""
+                <div class="result-box {res_class}">
+                    {icon} {res_text} (Confidence: {conf:.1f}%)
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Probability Bar
+                st.markdown("### Confidence Breakdown")
+                chart_data = pd.DataFrame({
+                    "Sentiment": ["Not Recommended", "Recommended"],
+                    "Probability": [prob[0], prob[1]]
+                })
+                
+                import altair as alt
+                c = alt.Chart(chart_data).mark_bar().encode(
+                    x=alt.X('Sentiment', sort=None),
+                    y='Probability',
+                    color=alt.Color('Sentiment', scale=alt.Scale(domain=['Not Recommended', 'Recommended'], range=['#ea5757', '#21ad88'])),
+                    tooltip=['Sentiment', alt.Tooltip('Probability', format='.1%')]
+                )
+                st.altair_chart(c, use_container_width=True)
+                
+                # Alert System (from app.py)
+                if pred == "no" and conf >= 85:
+                    st.error("⚠️ ALERT: High Priority Negative Review Detected! (Confidence > 85%)")
+                    st.caption("Recommended Action: Escalate to customer service immediately.")
+                    
+                    # Flag and Log feature
+                    if st.button("🚩 Flag This Review & Save to Log", type="secondary", key="flag_review_btn"):
+                        from datetime import datetime
+                        try:
+                            with open('alert_log.txt', 'a', encoding='utf-8') as f:
+                                f.write(f"\n{'='*70}\n")
+                                f.write(f"ALERT FLAGGED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                                f.write(f"Review: {user_review}\n")
+                                f.write(f"Prediction: NOT RECOMMENDED\n")
+                                f.write(f"Confidence: {conf:.1f}%\n")
+                                f.write(f"{'='*70}\n")
+                            
+                            st.success(f"✅ Review flagged and saved to alert_log.txt")
+                            st.info("📋 Check alert_log.txt to view the logged entry.")
+                        except Exception as e:
+                            st.error(f"❌ Error saving to log: {e}")
+                            import traceback
+                            st.code(traceback.format_exc())
+                else:
+                    # Optional: Show why it didn't trigger if negative
+                    if pred == "no":
+                        st.info(f"Note: Confidence ({conf:.1f}%) below threshold (85%) for alert.")
         
         with col2:
             st.markdown("### Quick Guide")
