@@ -72,6 +72,24 @@ st.markdown("""
         border-right: 1px solid #dee2e6;
     }
     
+    /* Cards */
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        border: 1px solid #e9ecef;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {transform: translateY(-2px); box-shadow: 0 8px 12px rgba(0,0,0,0.08);}
+    .metric-value {font-size: 2.5rem; font-weight: 700; color: #0d6efd; margin-bottom: 8px;}
+    .metric-label {font-size: 1rem; color: #6c757d; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;}
+    
+    /* Headers */
+    h1, h2, h3 {color: #212529; font-family: 'Inter', sans-serif;}
+    h1 {font-weight: 800; letter-spacing: -1px;}
+    
     /* Custom Classes */
     .result-box {
         padding: 20px;
@@ -102,58 +120,19 @@ with st.sidebar:
 # --------- Page: Dashboard Overview ---------
 if page == "Dashboard Overview":
     st.title("📊 Executive Dashboard")
-    st.markdown("Overview of airline sentiment trends and dataset metrics")
+    st.markdown("Overview of airline sentiment trends and dataset metrics.")
     
-    total_reviews = len(df)
-    model_accuracy = "92%"
-    avg_rating = round(df["overall"].mean(), 2) if "overall" in df.columns and not df.empty else 4.2
-    update_cycle = "24h"
-
-    st.markdown(f"""
-    <div style="display:flex; flex-wrap: wrap; gap: 32px 24px; margin-bottom:38px;">
-
-        <div style="
-            background: linear-gradient(135deg, #EDF4FF 65%, #B6DBFF 100%);
-            border-radius: 16px; box-shadow: 1px 5px 18px #b9cbe933;
-            min-width: 240px; padding: 36px 20px 28px 20px; text-align:center;
-            flex: 1;
-            ">
-            <div style="font-size:2.65em; font-weight:700; color:#1469EF; letter-spacing:-2px;">{total_reviews:,}</div>
-            <div style="font-size:1.18em; color:#6c7892; font-weight:600; margin-top:8px; letter-spacing:1px;">TOTAL REVIEWS</div>
-        </div>
-
-        <div style="
-            background: linear-gradient(135deg, #EAFEEE 65%, #59D499 100%);
-            border-radius: 16px; box-shadow: 1px 5px 18px #34bd8485;
-            min-width: 220px; padding: 36px 20px 28px 20px; text-align:center;
-            flex: 1;
-            ">
-            <div style="font-size:2.65em; font-weight:700; color:#23B26D;">{model_accuracy}</div>
-            <div style="font-size:1.18em; color:#5A946E; font-weight:600; margin-top:8px; letter-spacing:1px;">MODEL ACCURACY</div>
-        </div>
-
-        <div style="
-            background: linear-gradient(135deg, #FFF6E0 65%, #FFD580 100%);
-            border-radius: 16px; box-shadow: 1px 5px 18px #ffefb880;
-            min-width: 200px; padding: 36px 20px 28px 20px; text-align:center;
-            flex: 1;
-            ">
-            <div style="font-size:2.65em; font-weight:700; color:#FFB800;">{avg_rating}</div>
-            <div style="font-size:1.18em; color:#8A740D; font-weight:600; margin-top:8px; letter-spacing:1px;">AVG RATING</div>
-        </div>
-
-        <div style="
-            background: linear-gradient(135deg, #FFF0F3 65%, #FFD6DD 100%);
-            border-radius: 16px; box-shadow: 1px 5px 18px #eda7be88;
-            min-width: 180px; padding: 36px 20px 28px 20px; text-align:center;
-            flex: 1;
-            ">
-            <div style="font-size:2.65em; font-weight:700; color:#EB3D63;">{update_cycle}</div>
-            <div style="font-size:1.18em; color:#B45E74; font-weight:600; margin-top:8px; letter-spacing:1px;">UPDATE CYCLE</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+    # Top Metrics
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""<div class="metric-card"><div class="metric-value">{len(df):,}</div><div class="metric-label">Total Reviews</div></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown("""<div class="metric-card"><div class="metric-value">92%</div><div class="metric-label">Model Accuracy</div></div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown("""<div class="metric-card"><div class="metric-value">4.2</div><div class="metric-label">Avg Rating</div></div>""", unsafe_allow_html=True)
+    with c4:
+        st.markdown("""<div class="metric-card"><div class="metric-value">24h</div><div class="metric-label">Update Cycle</div></div>""", unsafe_allow_html=True)
+    
     # --------- Visualizations ---------
     st.markdown("### 📈 Sentiment & Ratings Analysis")
     
@@ -164,11 +143,9 @@ if page == "Dashboard Overview":
             st.subheader("Sentiment Distribution")
             if 'recommended' in df.columns:
                 fig1, ax1 = plt.subplots()
-                counts = df['recommended'].value_counts()
-                ax1.pie(counts, labels=counts.index.tolist(), autopct='%1.1f%%', colors=['#21ad88', '#ea5757'], startangle=90)
+                df['recommended'].value_counts().plot.pie(autopct='%1.1f%%', colors=['#21ad88', '#ea5757'], ax=ax1, startangle=90)
                 ax1.set_ylabel('')
                 st.pyplot(fig1)
-                plt.close()
             else:
                 st.warning("Column 'recommended' not found.")
 
@@ -176,10 +153,9 @@ if page == "Dashboard Overview":
             st.subheader("Rating Distribution")
             if 'overall' in df.columns:
                 fig2, ax2 = plt.subplots()
-                sns.histplot(data=df, x='overall', bins=10, kde=True, color='#0683b0', ax=ax2)
+                sns.histplot(df['overall'], bins=10, kde=True, color='#0683b0', ax=ax2)
                 ax2.set_xlabel("Rating (1-10)")
                 st.pyplot(fig2)
-                plt.close()
             else:
                 st.warning("Column 'overall' not found.")
 
@@ -190,7 +166,6 @@ if page == "Dashboard Overview":
             sns.barplot(x=avg_ratings.values, y=avg_ratings.index, palette="viridis", ax=ax3)
             ax3.set_xlabel("Average Rating")
             st.pyplot(fig3)
-            plt.close()
         else:
             st.warning("Airline data not available.")
             
@@ -372,7 +347,7 @@ elif page == "Batch Analysis":
         for i, r in enumerate(reviews):
             pred, conf, _ = predict_review(r, model, vectorizer)
             results.append({
-                "Review": r[:100] + "..." if len(r) > 100 else r,
+                "Review": r[:100] + "..." if len(r) > 100 else r,  # Truncate long reviews
                 "Sentiment": "Recommended" if pred == "yes" else "Not Recommended",
                 "Confidence": f"{conf:.1f}%"
             })
@@ -399,8 +374,9 @@ elif page == "Batch Analysis":
         with col3:
             st.metric("Not Recommended", neg_count, f"{100-pos_rate:.1f}%")
         with col4:
+            # Count high confidence predictions (>90%)
             high_conf = sum(1 for r in results if float(r['Confidence'].rstrip('%')) > 90)
-            st.metric("High Confidence", high_conf, f"{(high_conf/len( res_df)*100):.0f}%")
+            st.metric("High Confidence", high_conf, f"{(high_conf/len(res_df)*100):.0f}%")
         
         # Results Table
         st.markdown("### 📋 Detailed Results")
@@ -431,3 +407,4 @@ elif page == "Model Insights":
         st.markdown("### Feature Importance")
         st.info("Top positive words: great, comfortable, friendly, delicious")
         st.error("Top negative words: delayed, rude, dirty, terrible")
+
