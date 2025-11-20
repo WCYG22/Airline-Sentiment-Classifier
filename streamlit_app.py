@@ -191,7 +191,7 @@ if page == "Dashboard Overview":
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("Sentiment Distribution")
+            st.Title("Sentiment Distribution")
             if 'recommended' in df.columns:
                 fig1, ax1 = plt.subplots()
                 df['recommended'].value_counts().plot.pie(autopct='%1.1f%%', colors=['#21ad88', '#ea5757'], ax=ax1, startangle=90)
@@ -210,7 +210,7 @@ if page == "Dashboard Overview":
             else:
                 st.warning("Column 'overall' not found.")
 
-        st.title("###Airline Performance")
+        st.title("Airline Performance")
         if 'airline' in df.columns and 'overall' in df.columns:
             avg_ratings = df.groupby('airline')['overall'].mean().sort_values(ascending=False).head(10)
             fig3, ax3 = plt.subplots(figsize=(10, 5))
