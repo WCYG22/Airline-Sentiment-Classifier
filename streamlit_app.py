@@ -187,7 +187,8 @@ if page == "Dashboard Overview":
 
     
     # --------- Visualizations ---------
-    st.markdown("### 📈 Sentiment & Ratings Analysis")
+    br
+    st.markdown("### 📈Sentiment & Ratings Analysis")
     
     if not df.empty:
         col1, col2 = st.columns(2)
