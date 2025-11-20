@@ -187,7 +187,6 @@ if page == "Dashboard Overview":
 
     
     # --------- Visualizations ---------
-    br
     st.markdown("### 📈Sentiment & Ratings Analysis")
     
     if not df.empty:
