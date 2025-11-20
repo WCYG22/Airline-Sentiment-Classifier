@@ -119,7 +119,7 @@ with st.sidebar:
 
 # --------- Page: Dashboard Overview ---------
 if page == "Dashboard Overview":
-    st.title("📊 Executive Dashboard")
+    st.title("Executive Dashboard")
     st.markdown("Overview of airline sentiment trends and dataset metrics.")
     
     # ------ Colorful KPI Cards ------
@@ -187,7 +187,7 @@ if page == "Dashboard Overview":
 
     
     # --------- Visualizations ---------
-    st.markdown("### 📈Sentiment & Ratings Analysis")
+    st.markdown("###Sentiment & Ratings Analysis")
     
     if not df.empty:
         col1, col2 = st.columns(2)
