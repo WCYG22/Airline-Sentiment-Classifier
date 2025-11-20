@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# Model files (large files - optional, comment out if you want to include them)
+# *.pkl
+
+# Data files (optional)
+# *.xlsx
+
+# Logs
+*.log
+alert_log.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Word documents (optional - remove if you want to include)
+*.docx
+
+# PDF (optional - remove if you want to include)
+# *.pdf
