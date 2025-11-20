@@ -125,7 +125,7 @@ if page == "Dashboard Overview":
     # ------ Colorful KPI Cards ------
     c1, c2, c3, c4 = st.columns(4)
 
-        with c1:
+    with c1:
             st.markdown(
                 f"""
                 <div style="
