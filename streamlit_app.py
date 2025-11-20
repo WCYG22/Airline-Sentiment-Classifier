@@ -308,28 +308,85 @@ elif page == "Prediction Engine":
 # --------- Page: Batch Analysis ---------
 elif page == "Batch Analysis":
     st.title("📦 Batch Processing")
-    st.markdown("Analyze multiple reviews at once.")
+    st.markdown("Analyze multiple reviews at once via text input or file upload")
     
-    batch_in = st.text_area("Paste reviews (one per line):", height=200)
-    if st.button("Process Batch"):
-        reviews = [r.strip() for r in batch_in.split('\n') if r.strip()]
-        if reviews:
-            results = []
-            for r in reviews:
-                pred, conf, _ = predict_review(r, model, vectorizer)
-                results.append({
-                    "Review": r,
-                    "Sentiment": "Recommended" if pred == "yes" else "Not Recommended",
-                    "Confidence": conf
-                })
-            res_df = pd.DataFrame(results)
-            st.dataframe(res_df, use_container_width=True)
-            
-            # Download
-            csv = res_df.to_csv(index=False).encode('utf-8')
-            st.download_button("Download Results (CSV)", csv, "sentiment_results.csv", "text/csv")
-        else:
-            st.warning("No data entered.")
+    # Input method selection
+    input_method = st.radio("Choose input method:", ["Text Input", "File Upload"], horizontal=True)
+    
+    reviews = []
+    
+    if input_method == "Text Input":
+        batch_in = st.text_area("Paste reviews (one per line):", height=200, placeholder="Enter one review per line...")
+        if st.button("Process Batch", type="primary"):
+            reviews = [r.strip() for r in batch_in.split('\n') if r.strip()]
+    else:
+        uploaded_file = st.file_uploader("Upload file (CSV or Excel)", type=['csv', 'xlsx'])
+        review_column = st.text_input("Enter column name containing reviews:", value="review")
+        
+        if uploaded_file and st.button("Process File", type="primary"):
+            try:
+                if uploaded_file.name.endswith('.csv'):
+                    file_df = pd.read_csv(uploaded_file)
+                else:
+                    file_df = pd.read_excel(uploaded_file)
+                
+                if review_column in file_df.columns:
+                    reviews = file_df[review_column].dropna().astype(str).tolist()
+                    st.success(f"Loaded {len(reviews)} reviews from file")
+                else:
+                    st.error(f"Column '{review_column}' not found. Available columns: {', '.join(file_df.columns)}")
+            except Exception as e:
+                st.error(f"Error reading file: {e}")
+    
+    # Process reviews if any
+    if reviews:
+        results = []
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        for i, r in enumerate(reviews):
+            pred, conf, _ = predict_review(r, model, vectorizer)
+            results.append({
+                "Review": r[:100] + "..." if len(r) > 100 else r,  # Truncate long reviews
+                "Sentiment": "Recommended" if pred == "yes" else "Not Recommended",
+                "Confidence": f"{conf:.1f}%"
+            })
+            progress_bar.progress((i + 1) / len(reviews))
+            status_text.text(f"Processing: {i + 1}/{len(reviews)} reviews")
+        
+        progress_bar.empty()
+        status_text.empty()
+        
+        res_df = pd.DataFrame(results)
+        
+        # Summary Statistics
+        st.markdown("### 📊 Summary Statistics")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        pos_count = (res_df['Sentiment'] == 'Recommended').sum()
+        neg_count = (res_df['Sentiment'] == 'Not Recommended').sum()
+        pos_rate = (pos_count / len(res_df) * 100) if len(res_df) > 0 else 0
+        
+        with col1:
+            st.metric("Total Reviews", len(res_df))
+        with col2:
+            st.metric("Recommended", pos_count, f"{pos_rate:.1f}%")
+        with col3:
+            st.metric("Not Recommended", neg_count, f"{100-pos_rate:.1f}%")
+        with col4:
+            # Count high confidence predictions (>90%)
+            high_conf = sum(1 for r in results if float(r['Confidence'].rstrip('%')) > 90)
+            st.metric("High Confidence", high_conf, f"{(high_conf/len(res_df)*100):.0f}%")
+        
+        # Results Table
+        st.markdown("### 📋 Detailed Results")
+        st.dataframe(res_df, use_container_width=True)
+        
+        # Download
+        csv = res_df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download Results (CSV)", csv, "sentiment_results.csv", "text/csv", type="primary")
+    elif input_method == "Text Input" and not reviews:
+        st.info("👆 Enter reviews above and click 'Process Batch' to analyze")
 
 # --------- Page: Model Insights ---------
 elif page == "Model Insights":
