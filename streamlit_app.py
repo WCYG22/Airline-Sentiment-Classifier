@@ -5,7 +5,28 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+st.set_page_config(
+    page_title="Airline Sentiment Dashboard",
+    page_icon="✈️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# --------- Sidebar: Professional Banner and Navigation ---------
+st.sidebar.markdown("""
+    <div style="
+        background: linear-gradient(135deg, #0093E9 80%, #80D0C7 100%);
+        border-radius: 18px;
+        box-shadow: 0 7px 28px #80D0C740;
+        margin-bottom:22px; margin-top:-16px;
+        text-align:center; padding:28px 12px 20px 12px;">
+        <img src="https://img.icons8.com/ios-filled/100/ffffff/airplane-take-off.png" width="54" style="margin-bottom:7px"/>
+        <div style="font-size:1.55em;font-weight:700;color:white;letter-spacing:0.7px;margin-bottom:3px;">Airline NLP</div>
+        <div style="font-size:1.07em;color:#f7fafb;font-weight:400;margin-bottom:2px;">
+            Professional Sentiment Analysis
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # Navigation with icons and color background
 st.sidebar.markdown("""
@@ -34,6 +55,9 @@ font-weight:600; letter-spacing:.5px;">
     v2.0 | <span style="color:#20b57a">Enterprise Edition</span>
 </div>
 """, unsafe_allow_html=True)
+
+
+
 
 
 # --------- Model and Data Functions ---------
@@ -128,17 +152,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --------- Sidebar Navigation ---------
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/723/723955.png", width=50)
-    st.title("Airline NLP")
-    st.markdown("Professional Sentiment Analysis Dashboard")
-    st.markdown("---")
-    
-    page = st.radio("Navigation", ["Dashboard Overview", "Prediction Engine", "Batch Analysis", "Model Insights"])
-    
-    st.markdown("---")
-    st.info("v2.0 | Enterprise Edition")
+
 
 # --------- Page: Dashboard Overview ---------
 if page == "Dashboard Overview":
