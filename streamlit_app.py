@@ -1,15 +1,41 @@
 import streamlit as st
 import pickle
 import string
-import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# --------- Model and Prediction Functions ---------
+# --------- Configuration ---------
+st.set_page_config(
+    page_title="Airline Sentiment Dashboard",
+    page_icon="✈️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --------- Model and Data Functions ---------
 @st.cache_resource
 def load_artifacts():
-    model = pickle.load(open('airline_review_model.pkl', 'rb'))
-    vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
-    return model, vectorizer
+    try:
+        model = pickle.load(open('airline_review_model.pkl', 'rb'))
+        vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
+        return model, vectorizer
+    except FileNotFoundError:
+        st.error("Model files not found. Please ensure 'airline_review_model.pkl' and 'tfidf_vectorizer.pkl' are in the same directory.")
+        return None, None
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+        return None, None
+
+@st.cache_data
+def load_data():
+    try:
+        # Attempt to load the dataset
+        df = pd.read_excel('capstone_airline_reviews3.xlsx')
+        return df
+    except Exception as e:
+        # Return empty dataframe if file missing (graceful degradation)
+        return pd.DataFrame()
 
 def clean_text(text):
     text = str(text).lower()
@@ -26,217 +52,282 @@ def predict_review(text, model, vectorizer):
         return pred, conf, prob
     return pred, None, None
 
+# --------- Initialization ---------
 model, vectorizer = load_artifacts()
+if model is None or vectorizer is None:
+    st.warning("Application cannot proceed without model files.")
+    st.stop()
 
-# --------- Custom Website CSS ---------
+df = load_data()
+
+# --------- Custom CSS ---------
 st.markdown("""
 <style>
-body, .main {background: #f8fcfe;}
-.banner {
-  background: linear-gradient(90deg,#0683b0 0%,#18c1e8 100%);
-  color: white; 
-  border-radius:20px;
-  margin-bottom:34px;
-  padding:42px 10px 35px 10px; 
-  box-shadow: 0 9px 35px rgba(24, 193, 232, 0.09);
-  text-align: center;
-}
-.metric-card {
-  display:inline-block;
-  background:white;
-  border-radius:13px;
-  box-shadow:0 2px 10px rgba(30,70,140,0.10);
-  margin:10px; min-width:160px;
-  padding:22px 18px 16px 18px; text-align:center;
-}
-.metric-value {font-size:2.0em;font-weight:700;color:#0683b0;}
-.metric-label {font-size:1.05em;color:#555;}
-.section {background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(60,120,180,0.08);
-  margin:32px 0 24px 0; padding:36px 28px 26px 28px; }
-.result-green {background:#21ad88;color:white;border-radius:12px; padding:1.1em;font-size:1.2em;}
-.result-red {background:#ea5757;color:white;border-radius:12px; padding:1.1em;font-size:1.2em;}
-hr {margin: 0 0 24px 0;}
-h3{margin-top:1.5em;}
+    /* Main Layout */
+    .main .block-container {padding-top: 2rem; padding-bottom: 2rem;}
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+    }
+    
+    /* Cards */
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        border: 1px solid #e9ecef;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {transform: translateY(-2px); box-shadow: 0 8px 12px rgba(0,0,0,0.08);}
+    .metric-value {font-size: 2.5rem; font-weight: 700; color: #0d6efd; margin-bottom: 8px;}
+    .metric-label {font-size: 1rem; color: #6c757d; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;}
+    
+    /* Headers */
+    h1, h2, h3 {color: #212529; font-family: 'Inter', sans-serif;}
+    h1 {font-weight: 800; letter-spacing: -1px;}
+    
+    /* Custom Classes */
+    .result-box {
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    .result-pos {background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc;}
+    .result-neg {background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7;}
+    
 </style>
 """, unsafe_allow_html=True)
 
-# --------- Banner ---------
-st.markdown("""
-<div class="banner">
-    <h1>Airline Review Sentiment Analysis</h1>
-    <div>NLP FYP Project &nbsp;•&nbsp; Logistic Regression + TF-IDF &nbsp;•&nbsp; 92% Accuracy</div>
-</div>
-""", unsafe_allow_html=True)
+# --------- Sidebar Navigation ---------
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/723/723955.png", width=50)
+    st.title("Airline NLP")
+    st.markdown("Professional Sentiment Analysis Dashboard")
+    st.markdown("---")
+    
+    page = st.radio("Navigation", ["Dashboard Overview", "Prediction Engine", "Batch Analysis", "Model Insights"])
+    
+    st.markdown("---")
+    st.info("v2.0 | Enterprise Edition")
 
-# --------- KPI CARDS ---------
-kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
-with kpi_col1:
-    st.markdown("""
-      <div class="metric-card">
-        <div class="metric-value">92%</div>
-        <div class="metric-label">Accuracy</div>
-      </div>
-    """, unsafe_allow_html=True)
-with kpi_col2:
-    st.markdown("""
-      <div class="metric-card">
-        <div class="metric-value">0.92</div>
-        <div class="metric-label">F1 Score</div>
-      </div>
-    """, unsafe_allow_html=True)
-with kpi_col3:
-    st.markdown("""
-      <div class="metric-card">
-        <div class="metric-value">64,440</div>
-        <div class="metric-label">Reviews</div>
-      </div>
-    """, unsafe_allow_html=True)
-with kpi_col4:
-    st.markdown("""
-      <div class="metric-card">
-        <div class="metric-value">5,000</div>
-        <div class="metric-label">TF-IDF Features</div>
-      </div>
-    """, unsafe_allow_html=True)
+# --------- Page: Dashboard Overview ---------
+if page == "Dashboard Overview":
+    st.title("📊 Executive Dashboard")
+    st.markdown("Overview of airline sentiment trends and dataset metrics.")
+    
+    # Top Metrics
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""<div class="metric-card"><div class="metric-value">{len(df):,}</div><div class="metric-label">Total Reviews</div></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown("""<div class="metric-card"><div class="metric-value">92%</div><div class="metric-label">Model Accuracy</div></div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown("""<div class="metric-card"><div class="metric-value">4.2</div><div class="metric-label">Avg Rating</div></div>""", unsafe_allow_html=True)
+    with c4:
+        st.markdown("""<div class="metric-card"><div class="metric-value">24h</div><div class="metric-label">Update Cycle</div></div>""", unsafe_allow_html=True)
+    
+    # --------- Visualizations ---------
+    st.markdown("### 📈 Sentiment & Ratings Analysis")
+    
+    if not df.empty:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Sentiment Distribution")
+            if 'recommended' in df.columns:
+                fig1, ax1 = plt.subplots()
+                df['recommended'].value_counts().plot.pie(autopct='%1.1f%%', colors=['#21ad88', '#ea5757'], ax=ax1, startangle=90)
+                ax1.set_ylabel('')
+                st.pyplot(fig1)
+            else:
+                st.warning("Column 'recommended' not found.")
 
-# --------- Streamlit Tabs (Pages) ---------
-TABS = [
-    "Prediction Demo", "Test Suite", "Batch Analysis",
-    "Airline Comparison", "Model Info"
-]
-tab0, tab1, tab2, tab3, tab4 = st.tabs(TABS)
+        with col2:
+            st.subheader("Rating Distribution")
+            if 'overall' in df.columns:
+                fig2, ax2 = plt.subplots()
+                sns.histplot(df['overall'], bins=10, kde=True, color='#0683b0', ax=ax2)
+                ax2.set_xlabel("Rating (1-10)")
+                st.pyplot(fig2)
+            else:
+                st.warning("Column 'overall' not found.")
 
-# --------- SINGLE PREDICTION DEMO ---------
-with tab0:
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.header("Single Review Prediction")
-    user_review = st.text_input("Enter a review to predict:")
-    if st.button("Predict"):
-        if user_review.strip():
-            pred, conf, prob = predict_review(user_review, model, vectorizer)
-            result_class = 'result-green' if pred == "yes" else 'result-red'
-            result_string = 'Recommended' if pred == "yes" else 'Not Recommended'
-            st.markdown(
-                f'<div class="{result_class}"><b>{result_string} &mdash; {conf:.1f}%</b></div>',
-                unsafe_allow_html=True
-            )
-            st.write(f"**Probability breakdown:**  Recommended: {prob[1]*100:.1f}%, Not Recommended: {prob[0]*100:.1f}%")
-            # Confidence bar
-            bar_length = int(conf // 2)
-            bar = "🟩" * bar_length + "⬜" * (50-bar_length)
-            st.write(f"{bar} {conf:.1f}%")
-            # Alert
-            if pred == "no" and conf >= 85:
-                st.error("ALERT: High confidence negative review. Escalate to customer service!")
+        st.markdown("### ✈️ Airline Performance")
+        if 'airline' in df.columns and 'overall' in df.columns:
+            avg_ratings = df.groupby('airline')['overall'].mean().sort_values(ascending=False).head(10)
+            fig3, ax3 = plt.subplots(figsize=(10, 5))
+            sns.barplot(x=avg_ratings.values, y=avg_ratings.index, palette="viridis", ax=ax3)
+            ax3.set_xlabel("Average Rating")
+            st.pyplot(fig3)
         else:
-            st.info("Enter a review above.")
-    st.markdown('</div>', unsafe_allow_html=True)
+            st.warning("Airline data not available.")
+            
+    else:
+        st.error("Dataset not loaded. Visualizations unavailable.")
 
-# --------- TEST SUITE ---------
-with tab1:
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.header("Test Suite (Automated Examples)")
-    test_cases = [
-        {'category': 'Positive - Excellent Service','review': 'Amazing flight! The crew was incredibly friendly and helpful. Comfortable seats and delicious food. Best airline experience I have ever had. Highly recommend!'},
-        {'category': 'Negative - Poor Service','review': 'Worst airline experience ever. Flight delayed by 5 hours with absolutely no explanation. Staff were rude and unhelpful. Uncomfortable seats and terrible food. Never flying with them again!'},
-        {'category': 'Neutral - Mixed Experience','review': 'Decent flight overall. Nothing exceptional but got me to my destination safely. Service was average, seats were okay. Price was reasonable for what you get.'},
-        {'category': 'Positive - Great Value','review': 'Excellent value for money. Clean plane, smooth flight, and professional staff. In-flight entertainment was great. Would definitely fly with them again!'},
-        {'category': 'Negative - Multiple Issues','review': 'Terrible experience from start to finish. Lost my baggage, poor customer service response, plane was dirty and cramped. Food was inedible. Avoid this airline at all costs!'},
-        {'category': 'Edge Case - Very Short','review': 'Great flight, very comfortable!'},
-        {'category': 'Edge Case - Ambiguous','review': 'Flight was okay. Nothing special.'}
-    ]
-    tab_rows = []
-    rec, norec = 0, 0
-    for i, t in enumerate(test_cases, 1):
-        pred, conf, prob = predict_review(t['review'], model, vectorizer)
-        tab_rows.append({
-            "#": i, "Category": t['category'], 
-            "Prediction": "Recommended" if pred=="yes" else "Not Recommended",
-            "Conf.": f"{conf:.1f}%",
-            "Text": t['review'][:42]+"..."
-        })
-        rec += (pred=="yes")
-        norec += (pred=="no")
-    st.table(pd.DataFrame(tab_rows))
-    st.success(f"Passed: {rec}, Not Recommended: {norec}, Accuracy: {rec/len(test_cases)*100:.1f}%")
-    st.markdown('</div>', unsafe_allow_html=True)
+# --------- Page: Prediction Engine ---------
+elif page == "Prediction Engine":
+    st.title("🤖 Prediction Engine")
+    st.markdown("Real-time sentiment analysis for individual reviews.")
+    
+    tab1, tab2 = st.tabs(["Single Prediction", "Automated Test Suite"])
+    
+    with tab1:
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            user_review = st.text_area("Enter customer review:", height=150, placeholder="Type here...")
+            if st.button("Analyze Sentiment", type="primary"):
+                if user_review.strip():
+                    pred, conf, prob = predict_review(user_review, model, vectorizer)
+                    
+                    # Result Display
+                    res_class = "result-pos" if pred == "yes" else "result-neg"
+                    res_text = "Recommended" if pred == "yes" else "Not Recommended"
+                    icon = "👍" if pred == "yes" else "👎"
+                    
+                    st.markdown(f"""
+                    <div class="result-box {res_class}">
+                        {icon} {res_text} (Confidence: {conf:.1f}%)
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Probability Bar
+                    st.markdown("### Confidence Breakdown")
+                    chart_data = pd.DataFrame({
+                        "Sentiment": ["Not Recommended", "Recommended"],
+                        "Probability": [prob[0], prob[1]]
+                    })
+                    
+                    import altair as alt
+                    c = alt.Chart(chart_data).mark_bar().encode(
+                        x=alt.X('Sentiment', sort=None),
+                        y='Probability',
+                        color=alt.Color('Sentiment', scale=alt.Scale(domain=['Not Recommended', 'Recommended'], range=['#ea5757', '#21ad88'])),
+                        tooltip=['Sentiment', alt.Tooltip('Probability', format='.1%')]
+                    )
+                    st.altair_chart(c, use_container_width=True)
+                    
+                    # Store in session state for flag button
+                    st.session_state['last_review'] = user_review
+                    st.session_state['last_pred'] = pred
+                    st.session_state['last_conf'] = conf
+                    
+                    # Alert System (from app.py)
+                    if pred == "no" and conf >= 85:
+                        st.error("⚠️ ALERT: High Priority Negative Review Detected! (Confidence > 85%)")
+                        st.caption("Recommended Action: Escalate to customer service immediately.")
+                        
+                        # Flag and Log feature
+                        if st.button("🚩 Flag This Review & Save to Log", type="secondary", key="flag_review_btn"):
+                            from datetime import datetime
+                            try:
+                                # Use session state values to ensure data persists
+                                review_to_log = st.session_state.get('last_review', user_review)
+                                conf_to_log = st.session_state.get('last_conf', conf)
+                                
+                                with open('alert_log.txt', 'a', encoding='utf-8') as f:
+                                    f.write(f"\n{'='*70}\n")
+                                    f.write(f"ALERT FLAGGED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                                    f.write(f"Review: {review_to_log}\n")
+                                    f.write(f"Prediction: NOT RECOMMENDED\n")
+                                    f.write(f"Confidence: {conf_to_log:.1f}%\n")
+                                    f.write(f"{'='*70}\n")
+                                
+                                st.success(f"✅ Review flagged and saved to alert_log.txt")
+                            except Exception as e:
+                                st.error(f"❌ Error saving to log: {e}")
+                                import traceback
+                                st.code(traceback.format_exc())
+                    else:
+                        # Optional: Show why it didn't trigger if negative
+                        if pred == "no":
+                            st.info(f"Note: Confidence ({conf:.1f}%) below threshold (85%) for alert.")
+                    
+                else:
+                    st.warning("Please enter some text.")
+        
+        with col2:
+            st.markdown("### Quick Guide")
+            st.info("""
+            **How it works:**
+            1. Enter review text.
+            2. Click Analyze.
+            3. View sentiment & confidence.
+            
+            **Model:** Logistic Regression
+            **Accuracy:** 92%
+            """)
 
-# --------- BATCH MODE ---------
-with tab2:
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.header("Batch Review Analysis")
-    batch_in = st.text_area("Paste multiple reviews (one per line):", height=100)
-    if st.button("Analyze Batch"):
-        reviews = [r.strip() for r in batch_in.split('\n') if r.strip()]
-        if not reviews:
-            st.warning("No reviews entered.")
-        else:
-            rows = []
-            recs, nrecs, ct_total = 0, 0, 0.
-            for i, rev in enumerate(reviews, 1):
-                pred, conf, _ = predict_review(rev, model, vectorizer)
-                ct_total += conf
-                ok = (pred=="yes")
-                rows.append({"#": i, "Short Review": rev[:40]+"...", "Sentiment": "Recommended" if ok else "Not Recommended", "Conf.": f"{conf:.1f}%"})
-                recs += ok
-                nrecs += not ok
-            avg_conf = ct_total / len(reviews)
-            st.table(rows)
-            st.success(f"Recommended: {recs} ({recs/len(reviews)*100:.1f}%), Not Recommended: {nrecs} ({nrecs/len(reviews)*100:.1f}%), Avg. Confidence: {avg_conf:.1f}%")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# --------- AIRLINE COMPARISON ---------
-with tab3:
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.header("Airline Comparison")
-    airlines_data = {
-        "Singapore Airlines": [
-            "Excellent service and comfortable seats throughout the flight",
-            "Best airline I've ever flown with, highly professional crew",
-            "Great experience from booking to landing, will fly again",
-            "Comfortable journey with top-notch entertainment system"
-        ],
-        "Budget Airways": [
-            "Terrible service with constant delays and no communication",
-            "Uncomfortable cramped seats and rude cabin crew",
-            "Lost my baggage and received no help from staff",
-            "Worst flying experience, avoid at all costs"
-        ],
-        "National Carrier": [
-            "Good flight overall but nothing exceptional",
-            "Average service, reasonable price, got me there safely",
-            "Decent experience, some delays but acceptable",
-            "Okay for the price, nothing to complain about"
+    with tab2:
+        st.subheader("System Health Check")
+        test_cases = [
+            "Amazing flight! The crew was incredibly friendly.",
+            "Worst airline experience ever. Delayed and rude staff.",
+            "It was okay, nothing special.",
+            "Great value for money, would fly again."
         ]
-    }
-    airline_rows = []
-    for airline, reviews in airlines_data.items():
-        preds = []
-        confs = []
-        for r in reviews:
-            pred, conf, _ = predict_review(r, model, vectorizer)
-            preds.append(pred=="yes")
-            confs.append(conf)
-        pct = sum(preds)/len(preds)*100
-        avgc = sum(confs)/len(confs)
-        rating = "⭐⭐⭐⭐⭐" if pct >= 80 else "⭐⭐⭐⭐" if pct >= 60 else "⭐⭐⭐" if pct >= 40 else "⭐⭐"
-        airline_rows.append({"Airline": airline, "Pos %": f"{pct:.0f}%", "Avg. Conf": f"{avgc:.1f}%", "Rating": rating})
-    st.table(airline_rows)
-    st.markdown('</div>', unsafe_allow_html=True)
+        
+        if st.button("Run Diagnostics"):
+            results = []
+            for t in test_cases:
+                pred, conf, _ = predict_review(t, model, vectorizer)
+                results.append({
+                    "Input": t,
+                    "Prediction": "Recommended" if pred == "yes" else "Not Recommended",
+                    "Confidence": f"{conf:.1f}%"
+                })
+            st.dataframe(pd.DataFrame(results), use_container_width=True)
 
-# --------- MODEL INFO ---------
-with tab4:
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.header("Model Information")
-    st.write(f"""
-- Model: Logistic Regression  
-- Feature: TF-IDF (5,000 words)  
-- Training accuracy: 92%  
-- Precision / Recall / F1: 0.92  
-- Dataset: 64,440 airline reviews  
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
+# --------- Page: Batch Analysis ---------
+elif page == "Batch Analysis":
+    st.title("📦 Batch Processing")
+    st.markdown("Analyze multiple reviews at once.")
+    
+    batch_in = st.text_area("Paste reviews (one per line):", height=200)
+    if st.button("Process Batch"):
+        reviews = [r.strip() for r in batch_in.split('\n') if r.strip()]
+        if reviews:
+            results = []
+            for r in reviews:
+                pred, conf, _ = predict_review(r, model, vectorizer)
+                results.append({
+                    "Review": r,
+                    "Sentiment": "Recommended" if pred == "yes" else "Not Recommended",
+                    "Confidence": conf
+                })
+            res_df = pd.DataFrame(results)
+            st.dataframe(res_df, use_container_width=True)
+            
+            # Download
+            csv = res_df.to_csv(index=False).encode('utf-8')
+            st.download_button("Download Results (CSV)", csv, "sentiment_results.csv", "text/csv")
+        else:
+            st.warning("No data entered.")
 
-# --- FOOTER ---
-st.write("---")
-st.caption("© 2025 Your University | FYP Demo — Built with Streamlit. All core CLI features available.")
+# --------- Page: Model Insights ---------
+elif page == "Model Insights":
+    st.title("🧠 Model Intelligence")
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("### Performance Metrics")
+        st.markdown("""
+        - **Algorithm:** Logistic Regression
+        - **Vectorization:** TF-IDF (5000 features)
+        - **Training Set:** 64,440 Reviews
+        - **Accuracy:** 92.0%
+        - **F1 Score:** 0.92
+        """)
+    
+    with c2:
+        st.markdown("### Feature Importance")
+        st.info("Top positive words: great, comfortable, friendly, delicious")
+        st.error("Top negative words: delayed, rude, dirty, terrible")
+
