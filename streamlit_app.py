@@ -187,7 +187,7 @@ if page == "Dashboard Overview":
 
     
     # --------- Visualizations ---------
-    st.markdown
+
     
     if not df.empty:
         col1, col2 = st.columns(2)
