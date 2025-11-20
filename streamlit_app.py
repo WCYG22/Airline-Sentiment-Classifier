@@ -210,7 +210,7 @@ if page == "Dashboard Overview":
             else:
                 st.warning("Column 'overall' not found.")
 
-        st.markdown("###Airline Performance")
+        st.title("###Airline Performance")
         if 'airline' in df.columns and 'overall' in df.columns:
             avg_ratings = df.groupby('airline')['overall'].mean().sort_values(ascending=False).head(10)
             fig3, ax3 = plt.subplots(figsize=(10, 5))
