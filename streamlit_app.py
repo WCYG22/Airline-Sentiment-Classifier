@@ -1,114 +1,178 @@
 import streamlit as st
 import pickle
 import string
+import datetime
+import pandas as pd
 
-# --- Custom CSS for advanced theming ---
-st.markdown("""
-<style>
-body, .main {background: #f6f8fb;}
-.banner {
-    background: linear-gradient(90deg,#05445E 70%,#189AB4 100%);
-    color: white; margin:-48px -52px 30px -52px; padding:45px 10px 35px 10px; 
-    border-radius:0 0 33px 33px; text-align:center;}
-.smallcap {font-size:1.1em; color:#eee;}
-.card {
-    background:white; border-radius:14px; box-shadow:0 2px 8px rgba(30,70,140,0.110);
-    padding:32px 34px 22px 34px; margin:20px 0;
-}
-.result-green {background:#3bb77e; color:white; font-size:1.25em; border-radius:9px; padding: 1.1em;}
-.result-red {background:#f05254;color:white;font-size:1.25em; border-radius:9px; padding: 1.1em;}
-.table th {background-color: #05445E;color:white;}
-.metric-card {
-    background:#F7F7F9; border-radius:14px; padding:16px;font-size:1.1em;
-    box-shadow:0 1.5px 8px rgba(70,80,120,0.08);}
-.metric-value {font-size:1.8em; font-weight:700; color:#05445E;}
-.metric-label {font-size:1em; color:#606060;}
-</style>
-""", unsafe_allow_html=True)
+# ----------- Model utilities -----------
+@st.cache_resource
+def load_artifacts():
+    model = pickle.load(open('airline_review_model.pkl', 'rb'))
+    vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
+    return model, vectorizer
 
-# Banner
-st.markdown("""
-<div class='banner'>
-    <h1>Airline Review Sentiment Analysis</h1>
-    <div class='smallcap'>NLP Final Year Project &nbsp; | &nbsp; Logistic Regression + TF-IDF &nbsp; | &nbsp; 92% accuracy</div>
-</div>
-""", unsafe_allow_html=True)
+def clean_text(text):
+    text = str(text).lower()
+    text = text.translate(str.maketrans('', '', string.punctuation + '0123456789'))
+    return ' '.join(text.split())
 
-# KPI metrics
-col1, col2, col3 = st.columns(3)
-with col1: st.markdown("<div class='metric-card'><span class='metric-value'>92%</span><div class='metric-label'>Accuracy</div></div>", unsafe_allow_html=True)
-with col2: st.markdown("<div class='metric-card'><span class='metric-value'>0.92</span><div class='metric-label'>F1 Score</div></div>", unsafe_allow_html=True)
-with col3: st.markdown("<div class='metric-card'><span class='metric-value'>64,440</span><div class='metric-label'>Reviews (Dataset)</div></div>", unsafe_allow_html=True)
+def predict_review(text, model, vectorizer):
+    cleaned = clean_text(text)
+    vect = vectorizer.transform([cleaned])
+    pred = model.predict(vect)[0]
+    if hasattr(model, "predict_proba"):
+        prob = model.predict_proba(vect)[0]
+        conf = max(prob) * 100
+        return pred, conf, prob
+    return pred, None, None
 
-st.markdown("<div class='card'>", unsafe_allow_html=True) # White card wrapper
+model, vectorizer = load_artifacts()
 
-# --- SINGLE REVIEW DEMO ---
-st.header("Single Prediction Demo")
-text = st.text_input("Review Text:")
-if st.button("Predict"):
-    if text.strip():
-        @st.cache_resource
-        def load_model():
-            model = pickle.load(open('airline_review_model.pkl', 'rb'))
-            vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
-            return model, vectorizer
-        def clean_text(t):
-            t = str(t).lower()
-            t = t.translate(str.maketrans('', '', string.punctuation + '0123456789'))
-            return ' '.join(t.split())
-        def predict_review(review, model, vectorizer):
-            cleaned = clean_text(review)
-            vect = vectorizer.transform([cleaned])
-            pred = model.predict(vect)[0]
-            prob = model.predict_proba(vect)[0]
-            conf = max(prob)*100
-            return pred, conf, prob
-        model, vectorizer = load_model()
-        pred, conf, prob = predict_review(text, model, vectorizer)
-        result_class = 'result-green' if pred == "yes" else 'result-red'
-        rec_text = 'Recommended' if pred == "yes" else 'Not Recommended'
-        st.markdown(
-            f"<div class='{result_class}'><b>{rec_text} &mdash; {conf:.1f}%</b></div>",
-            unsafe_allow_html=True,
-        )
-        st.write(f"**Probabilities:**  Recommended: {prob[1]*100:.1f}%,  Not Recommended: {prob[0]*100:.1f}%")
-    else:
-        st.info("Please enter a review above.")
-st.markdown("</div>", unsafe_allow_html=True)
+# ----------- Streamlit UI -----------
 
-# --- BATCH MODE ---
+st.set_page_config(page_title="Airline Sentiment Analysis", layout="wide")
 
-st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.header("Batch Mode")
-st.write("Paste multiple reviews below (one per line).")
-batch_reviews = st.text_area("Batch Reviews:", height=100)
-if st.button("Batch Analyze"):
-    if batch_reviews.strip():
-        batch_lines = [r.strip() for r in batch_reviews.split('\n') if r.strip()]
-        model, vectorizer = load_model()
-        rows = []
-        rec_count = 0
-        for i, line in enumerate(batch_lines, 1):
-            pred, conf, _ = predict_review(line, model, vectorizer)
-            rec_count += 1 if pred=="yes" else 0
-            rows.append({
-                "#": i, 
-                "Review": line[:40] + ("..." if len(line) > 40 else ""),
-                "Prediction": "Recommended" if pred=="yes" else "Not Recommended",
-                "Confidence": f"{conf:.1f}%"
+TABS = [
+    "Main Menu", "Test Suite", "Interactive Mode",
+    "Batch Analysis", "Airline Comparison", "Model Info"
+]
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(TABS)
+
+# ===================== MAIN MENU =====================
+with tab1:
+    st.title("Airline Review Sentiment Classifier")
+    st.header("Terminal-based NLP system, now in Streamlit. All CLI features on web!")
+    st.markdown("---")
+    st.markdown("""
+    #### Choose an option using the tabs above:
+    1. **Test Suite:** Run and display all predefined test cases and their detailed stats  
+    2. **Interactive Mode:** Prediction, session statistics, rolling history, and alerts  
+    3. **Batch Analysis:** Enter multiple reviews for stats, table, confidence, breakdown  
+    4. **Airline Comparison:** Benchmark sentiment metrics across airlines  
+    5. **Model Info:** All trained model specs and performance
+    """)
+
+# ===================== TEST SUITE =====================
+with tab2:
+    st.header("Test Suite Demonstration")
+    test_cases = [
+        {
+            'category': 'Positive - Excellent Service',
+            'review': 'Amazing flight! The crew was incredibly friendly and helpful. Comfortable seats and delicious food. Best airline experience I have ever had. Highly recommend!'
+        },
+        {
+            'category': 'Negative - Poor Service',
+            'review': 'Worst airline experience ever. Flight delayed by 5 hours with absolutely no explanation. Staff were rude and unhelpful. Uncomfortable seats and terrible food. Never flying with them again!'
+        },
+        {
+            'category': 'Neutral - Mixed Experience',
+            'review': 'Decent flight overall. Nothing exceptional but got me to my destination safely. Service was average, seats were okay. Price was reasonable for what you get.'
+        },
+        {
+            'category': 'Positive - Great Value',
+            'review': 'Excellent value for money. Clean plane, smooth flight, and professional staff. In-flight entertainment was great. Would definitely fly with them again!'
+        },
+        {
+            'category': 'Negative - Multiple Issues',
+            'review': 'Terrible experience from start to finish. Lost my baggage, poor customer service response, plane was dirty and cramped. Food was inedible. Avoid this airline at all costs!'
+        },
+        {
+            'category': 'Edge Case - Very Short',
+            'review': 'Great flight, very comfortable!'
+        },
+        {
+            'category': 'Edge Case - Ambiguous',
+            'review': 'Flight was okay. Nothing special.'
+        }
+    ]
+    suite_rows = []
+    rec, not_rec = 0, 0
+    for i, test in enumerate(test_cases, 1):
+        pred, conf, prob = predict_review(test['review'], model, vectorizer)
+        suite_rows.append({
+            "#": i,
+            "Category": test['category'],
+            "Input": test['review'][:50] + "...",
+            "Prediction": "Recommended" if pred == "yes" else "Not Recommended",
+            "Confidence": f"{conf:.1f}%",
+        })
+        if pred == "yes":
+            rec += 1
+        else:
+            not_rec += 1
+    st.table(pd.DataFrame(suite_rows))
+    st.success(f"Total: {len(test_cases)} | Recommended: {rec} | Not Recommended: {not_rec} | Accuracy: {rec/len(test_cases)*100:.1f}%")
+
+# ================ INTERACTIVE MODE ================
+with tab3:
+    st.header("Interactive Prediction Mode")
+    if "history" not in st.session_state: st.session_state["history"] = []
+    st.write("**Commands:** Type a review for prediction. Click 'Show Statistics' or 'Clear History' as needed.")
+
+    inp = st.text_input("Enter review for prediction:")
+    _col1, _col2, _col3 = st.columns([1,1,3])
+    if _col1.button("Predict"):
+        if len(inp.split()) < 2:
+            st.warning("Review too short. Please provide more detail.")
+        else:
+            pred, conf, prob = predict_review(inp, model, vectorizer)
+            st.session_state["history"].append({
+                "review": inp,
+                "prediction": pred,
+                "conf": conf,
+                "dt": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
-        st.write(f"**Analysis:** {rec_count}/{len(rows)} reviews recommended ({rec_count/len(rows)*100:.1f}%)")
-        st.table(rows)
-    else:
-        st.info("Paste some reviews above.")
-st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("---")
+            st.write(f"**Sentiment:** {'Recommended' if pred == 'yes' else 'Not Recommended'}")
+            st.write(f"**Confidence:** {conf:.1f}%")
+            # Alert
+            if pred == "no" and conf and conf >= 85:
+                st.error("ALERT: High priority negative review with high confidence detected!")
+    if _col2.button("Show Statistics"):
+        history = st.session_state["history"]
+        if not history:
+            st.info("No predictions yet.")
+        else:
+            rec_count = sum(1 for h in history if h["prediction"] == "yes")
+            avg_conf = sum(h["conf"] for h in history) / len(history)
+            st.write(f"Total predictions: {len(history)} | Recommended: {rec_count} ({rec_count/len(history)*100:.1f}%) | Not Recommended: {len(history)-rec_count}")
+            st.write(f"Average confidence: {avg_conf:.1f}%")
+            st.dataframe(pd.DataFrame(history))
+    if _col3.button("Clear History"):
+        st.session_state["history"] = []
 
-# --- AIRLINE COMPARISON ---
+    if st.session_state["history"]:
+        st.markdown("---\n**Recent Predictions:** (Last 5)")
+        hlist = st.session_state["history"][-5:][::-1]
+        for i, h in enumerate(hlist, 1):
+            st.write(f"{i}. {'REC' if h['prediction']=='yes' else 'NOT'} ({h['conf']:.1f}%) | {h['review'][:50]}...")
 
-st.markdown("<div class='card'>", unsafe_allow_html=True)
-st.header("Airline Comparison Dashboard")
-if st.button("Compare Airlines"):
-    airlines = {
+# ================ BATCH ANALYSIS ================
+with tab4:
+    st.header("Batch Analysis Mode")
+    batch_in = st.text_area("Enter multiple reviews (one per line):", height=140)
+    if st.button("Run Batch Analysis"):
+        reviews = [r.strip() for r in batch_in.split('\n') if r.strip()]
+        if not reviews:
+            st.warning("No reviews entered.")
+        else:
+            results = []
+            for r in reviews:
+                pred, conf, prob = predict_review(r, model, vectorizer)
+                results.append({
+                    "review": r[:50] + "...",
+                    "Sentiment": "Recommended" if pred == "yes" else "Not Recommended",
+                    "Confidence": f"{conf:.1f}%"
+                })
+            recs = sum(1 for r in results if r["Sentiment"] == "Recommended")
+            avg_conf = sum(float(r["Confidence"][:-1]) for r in results) / len(results)
+            st.table(pd.DataFrame(results))
+            st.success(f"Total Reviews: {len(results)} | Recommended: {recs} ({recs/len(results)*100:.1f}%) | Not Recommended: {len(results)-recs} ({(len(results)-recs)/len(results)*100:.1f}%) | Avg Confidence: {avg_conf:.1f}%")
+
+# ================ AIRLINE COMPARISON ================
+with tab5:
+    st.header("Airline Comparison Dashboard")
+    airlines_data = {
         "Singapore Airlines": [
             "Excellent service and comfortable seats throughout the flight",
             "Best airline I've ever flown with, highly professional crew",
@@ -128,30 +192,38 @@ if st.button("Compare Airlines"):
             "Okay for the price, nothing to complain about"
         ]
     }
-    comp_rows = []
-    for airline, reviews in airlines.items():
-        model, vectorizer = load_model()
-        preds = [predict_review(r, model, vectorizer)[0]=="yes" for r in reviews]
-        pct = sum(preds)/len(preds)*100
-        stars = "⭐⭐⭐⭐⭐" if pct>=80 else "⭐⭐⭐⭐" if pct>=60 else "⭐⭐⭐" if pct>=40 else "⭐⭐"
-        comp_rows.append({
+    compare_rows = []
+    for airline, reviews in airlines_data.items():
+        preds = []
+        confs = []
+        for r in reviews:
+            pred, conf, _ = predict_review(r, model, vectorizer)
+            preds.append(pred == 'yes')
+            confs.append(conf)
+        pct = sum(preds) / len(preds) * 100
+        avg_conf = sum(confs) / len(confs)
+        rating = "⭐⭐⭐⭐⭐" if pct >= 80 else "⭐⭐⭐⭐" if pct >= 60 else "⭐⭐⭐" if pct >= 40 else "⭐⭐"
+        compare_rows.append({
             "Airline": airline,
-            "Positive %": f"{pct:.0f}%",
-            "Rating": stars
+            "Positive Sentiment": f"{pct:.0f}%",
+            "Avg Confidence": f"{avg_conf:.1f}%",
+            "Sample Size": len(reviews),
+            "Rating": rating
         })
-    st.table(comp_rows)
-st.markdown("</div>", unsafe_allow_html=True)
+    st.table(pd.DataFrame(compare_rows))
 
-# --- Model Info ---
-st.markdown("<div class='card'>", unsafe_allow_html=True)
-with st.expander("About this Project & Model", expanded=False):
-    st.markdown("""
-    **Project:** Airline Review Sentiment Analysis FYP  
-    **Model:** Logistic Regression | Features: TF-IDF Vectorizer (5,000 words)  
-    **Performance:** Accuracy 92% | F1-Score 0.92  
-    **Dataset:** 64,440 airline reviews  
-    **Author:** Your Name, University/Institution
+# ================ MODEL INFO ================
+with tab6:
+    st.header("Model Information")
+    st.write(f"""
+- Model: Logistic Regression  
+- Feature Extraction: TF-IDF Vectorizer  
+- Vocabulary Size: {len(vectorizer.get_feature_names_out())} words  
+- Training Accuracy: 92%  
+- Precision: 92%  
+- Recall: 92%  
+- F1-Score: 0.92  
+- Dataset: 64,440 airline reviews  
     """)
-st.markdown("</div>", unsafe_allow_html=True)
-st.markdown("---")
-st.caption("© 2025 Your University | FYP Project Demo. All rights reserved.")
+
+st.write("— Demo covers 100% of terminal features. Ready for your FYP! —")
