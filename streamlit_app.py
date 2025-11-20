@@ -119,7 +119,7 @@ with st.sidebar:
 
 # --------- Page: Dashboard Overview ---------
 if page == "Dashboard Overview":
-    st.title("📊 Executive Dashboard")
+    st.title("Executive Dashboard")
     st.markdown("Overview of airline sentiment trends and dataset metrics.")
     
     # Top Metrics
@@ -134,7 +134,7 @@ if page == "Dashboard Overview":
         st.markdown("""<div class="metric-card"><div class="metric-value">24h</div><div class="metric-label">Update Cycle</div></div>""", unsafe_allow_html=True)
     
     # --------- Visualizations ---------
-    st.markdown("### 📈 Sentiment & Ratings Analysis")
+    st.markdown("Sentiment & Ratings Analysis")
     
     if not df.empty:
         col1, col2 = st.columns(2)
@@ -159,7 +159,7 @@ if page == "Dashboard Overview":
             else:
                 st.warning("Column 'overall' not found.")
 
-        st.markdown("### ✈️ Airline Performance")
+        st.markdown("Airline Performance")
         if 'airline' in df.columns and 'overall' in df.columns:
             avg_ratings = df.groupby('airline')['overall'].mean().sort_values(ascending=False).head(10)
             fig3, ax3 = plt.subplots(figsize=(10, 5))
