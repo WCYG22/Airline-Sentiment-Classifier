@@ -321,38 +321,38 @@ elif page == "Prediction Engine":
                     st.error("⚠️ ALERT: High Priority Negative Review Detected! (Confidence > 85%)")
                     st.caption("Recommended Action: Escalate to customer service immediately.")
                     
-                    # Flag and Log feature
-                    if st.button("🚩 Flag This Review & Save to Log", type="secondary", key="flag_review_btn"):
-                        from datetime import datetime
-                        import os
+                    # Automatically log to file - SIMPLIFIED VERSION
+                    import datetime
+                    import os
+                    
+                    try:
+                        # Prepare entry
+                        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        entry = f"\n{'='*70}\n"
+                        entry += f"ALERT TRIGGERED: {timestamp}\n"
+                        entry += f"Review: {user_review}\n"
+                        entry += f"Prediction: NOT RECOMMENDED\n"
+                        entry += f"Confidence: {conf:.1f}%\n"
+                        entry += f"{'='*70}\n"
                         
-                        try:
-                            # Prepare entry
-                            entry = f"\n{'='*70}\n"
-                            entry += f"ALERT FLAGGED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                            entry += f"Review: {user_review}\n"
-                            entry += f"Prediction: NOT RECOMMENDED\n"
-                            entry += f"Confidence: {conf:.1f}%\n"
-                            entry += f"{'='*70}\n"
+                        # Get the absolute path
+                        log_file = r"C:\Users\wongc\OneDrive - UOW Malaysia KDU\Desktop\NLP (ASSIGN)\alert_log.txt"
+                        
+                        # Write to file
+                        with open(log_file, 'a', encoding='utf-8') as f:
+                            f.write(entry)
+                        
+                        st.success(f"✅ Alert automatically saved!")
+                        st.info(f"📁 File: {log_file}")
+                        
+                        # Show what was written
+                        with st.expander("📄 View logged entry"):
+                            st.code(entry, language="text")
                             
-                            # Write to file
-                            log_path = os.path.abspath('alert_log.txt')
-                            with open('alert_log.txt', 'a', encoding='utf-8') as f:
-                                f.write(entry)
-                                f.flush()  # Force write to disk
-                            
-                            st.success(f"✅ Review flagged and saved to alert_log.txt")
-                            st.info(f"📁 File location: {log_path}")
-                            st.info("📋 Close and reopen the file to see the new entry.")
-                            
-                            # Show what was written
-                            with st.expander("📄 Click to view what was written"):
-                                st.code(entry, language="text")
-                                
-                        except Exception as e:
-                            st.error(f"❌ Error saving to log: {e}")
-                            import traceback
-                            st.code(traceback.format_exc())
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
                 else:
                     # Optional: Show why it didn't trigger if negative
                     if pred == "no":
@@ -492,4 +492,3 @@ elif page == "Model Insights":
         st.markdown("### Feature Importance")
         st.info("Top positive words: great, comfortable, friendly, delicious")
         st.error("Top negative words: delayed, rude, dirty, terrible")
-
