@@ -40,3 +40,25 @@ Review: worst every airlines
 Prediction: NOT RECOMMENDED
 Confidence: 99.6%
 ======================================================================
+
+======================================================================
+ALERT TRIGGERED: 2025-11-21 02:00:08
+Review: Worst and rude staff
+Prediction: NOT RECOMMENDED
+Confidence: 100.0%
+======================================================================
+
+======================================================================
+ALERT TRIGGERED: 2025-11-21 02:39:28
+Review: bad review and rude staff
+
+Prediction: NOT RECOMMENDED
+Confidence: 97.3%
+======================================================================
+
+======================================================================
+ALERT TRIGGERED: 2025-11-21 02:43:22
+Review: terrible rude staff worst airline
+Prediction: NOT RECOMMENDED
+Confidence: 100.0%
+======================================================================

@@ -321,9 +321,12 @@ elif page == "Prediction Engine":
                     st.error("⚠️ ALERT: High Priority Negative Review Detected! (Confidence > 85%)")
                     st.caption("Recommended Action: Escalate to customer service immediately.")
                     
-                    # Automatically log to file - SIMPLIFIED VERSION
+                    # Automatically log to file
                     import datetime
                     import os
+                    from pathlib import Path
+                    import time
+                    import shutil
                     
                     try:
                         # Prepare entry
@@ -335,22 +338,33 @@ elif page == "Prediction Engine":
                         entry += f"Confidence: {conf:.1f}%\n"
                         entry += f"{'='*70}\n"
                         
-                        # Get the absolute path
-                        log_file = r"C:\Users\wongc\OneDrive - UOW Malaysia KDU\Desktop\NLP (ASSIGN)\alert_log.txt"
+                        # Get script directory
+                        script_dir = Path(__file__).parent
+                        log_file = script_dir / "alert_log.txt"
+                        temp_file = script_dir / "alert_log_temp.txt"
                         
-                        # Write to file
-                        with open(log_file, 'a', encoding='utf-8') as f:
-                            f.write(entry)
+                        # Read existing content
+                        if log_file.exists():
+                            existing_content = log_file.read_text(encoding='utf-8')
+                        else:
+                            existing_content = ""
+                        
+                        # Write everything to temp file
+                        new_content = existing_content + entry
+                        temp_file.write_text(new_content, encoding='utf-8')
+                        
+                        # Replace original with temp (atomic operation)
+                        shutil.move(str(temp_file), str(log_file))
                         
                         st.success(f"✅ Alert automatically saved!")
-                        st.info(f"📁 File: {log_file}")
+                        st.caption(f"Location: {log_file}")
                         
                         # Show what was written
                         with st.expander("📄 View logged entry"):
                             st.code(entry, language="text")
                             
                     except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
+                        st.error(f"❌ Error logging alert: {str(e)}")
                         import traceback
                         st.code(traceback.format_exc())
                 else:
